@@ -13,6 +13,15 @@
   <ItemGroup>
     <Text Include="LICENSE.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Monitor.h" />
+    <ClInclude Include="Rectangle.h" />
+    <ClInclude Include="Win32Exception.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Monitor.cpp" />
+    <ClCompile Include="Win32Exception.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{EAD6B8B6-90BE-4F49-BC75-55F28A15F44D}</ProjectGuid>

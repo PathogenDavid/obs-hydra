@@ -3,4 +3,13 @@
   <ItemGroup>
     <Text Include="LICENSE.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Monitor.h" />
+    <ClInclude Include="Rectangle.h" />
+    <ClInclude Include="Win32Exception.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Monitor.cpp" />
+    <ClCompile Include="Win32Exception.cpp" />
+  </ItemGroup>
 </Project>
