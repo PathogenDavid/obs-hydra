@@ -112,6 +112,7 @@ private:
     uint32_t height;
 
     HydraCore::ActiveMonitorTracker* tracker;
+    HydraCore::EventSubscriptionHandle trackerEventSubscription;
     HMONITOR activeMonitor;
 
     void ActiveMonitorChanged()
@@ -126,7 +127,7 @@ public:
 
         // Initialize active monitor tracker
         tracker = HydraCore::ActiveMonitorTracker::GetInstance();
-        tracker->SubscribeActiveMonitorChanged(this, &ActiveMonitorSource::ActiveMonitorChanged);
+        trackerEventSubscription = tracker->SubscribeActiveMonitorChanged(this, &ActiveMonitorSource::ActiveMonitorChanged);
 
         // Create all monitor sources that we might need
         // Instead of dnymaically creating/destroying them, we just create them all at once.
@@ -146,6 +147,8 @@ public:
 
     ~ActiveMonitorSource()
     {
+        tracker->UnsubscribeActiveMonitorChanged(trackerEventSubscription);
+
         for (MonitorSource* monitorSource : monitorSources)
         {
             delete monitorSource;
