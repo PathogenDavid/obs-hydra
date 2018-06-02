@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "ObsSourceDefinition.h"
 
 #include <algorithm>
+#include <ActiveMonitorTracker.h>
 #include <Monitor.h>
 #include <obs.h>
 #include <vector>
@@ -72,6 +73,11 @@ public:
         return monitor.GetName();
     }
 
+    HMONITOR GetMonitorHandle()
+    {
+        return monitor.GetHandle();
+    }
+
     obs_source_t* GetSource()
     {
         return source;
@@ -105,10 +111,22 @@ private:
     uint32_t width;
     uint32_t height;
 
+    HydraCore::ActiveMonitorTracker* tracker;
+    HMONITOR activeMonitor;
+
+    void ActiveMonitorChanged()
+    {
+        activeMonitor = tracker->GetActiveMonitorHandle();
+    }
+
 public:
     ActiveMonitorSource(obs_data_t* settings, obs_source_t* source)
     {
         this->source = source;
+
+        // Initialize active monitor tracker
+        tracker = HydraCore::ActiveMonitorTracker::GetInstance();
+        tracker->SubscribeActiveMonitorChanged(this, &ActiveMonitorSource::ActiveMonitorChanged);
 
         // Create all monitor sources that we might need
         // Instead of dnymaically creating/destroying them, we just create them all at once.
@@ -230,6 +248,7 @@ private:
 
     void VideoRender(gs_effect_t* effect)
     {
+#if 0
         int i = 0;
         float monitorCount = (float)std::count_if(monitorSources.begin(), monitorSources.end(), [](MonitorSource* monitor) { return monitor->IsEnabled(); });
         float monitorSize = ((float)GetWidth()) / monitorCount;
@@ -249,6 +268,16 @@ private:
             gs_matrix_pop();
             i++;
         }
+#else
+        for (MonitorSource* monitorSource : monitorSources)
+        {
+            if (monitorSource->GetMonitorHandle() == activeMonitor)
+            {
+                obs_source_video_render(monitorSource->GetSource());
+                break;
+            }
+        }
+#endif
     }
 
     void EnumSources(obs_source_enum_proc_t enumCallback, void* param, bool activeOnly)

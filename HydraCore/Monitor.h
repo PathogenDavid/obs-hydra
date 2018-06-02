@@ -18,6 +18,8 @@ namespace HydraCore
         bool isPrimary;
     public:
         Monitor(uint32_t id, HMONITOR handle, LPRECT rectangle);
+
+        HMONITOR GetHandle();
         uint32_t GetId();
         std::string GetName();
         std::string GetDescription();

@@ -39,6 +39,11 @@ namespace HydraCore
         description = descriptionBuilder.str();
     }
 
+    HMONITOR Monitor::GetHandle()
+    {
+        return handle;
+    }
+
     uint32_t Monitor::GetId()
     {
         return id;
