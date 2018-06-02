@@ -7,9 +7,13 @@
     <ClInclude Include="Monitor.h" />
     <ClInclude Include="Rectangle.h" />
     <ClInclude Include="Win32Exception.h" />
+    <ClInclude Include="ActiveMonitorTracker.h" />
+    <ClInclude Include="Event.h" />
+    <ClInclude Include="EventHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Monitor.cpp" />
     <ClCompile Include="Win32Exception.cpp" />
+    <ClCompile Include="ActiveMonitorTracker.cpp" />
   </ItemGroup>
 </Project>

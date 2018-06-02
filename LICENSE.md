@@ -10,4 +10,4 @@ Portions of this project are covered under separate licenses as described below.
 
 # Everything else
 
-Files at the root of this repository (such as the `sln` and `props` files) shall be considered to be covered by the same license as `HydraCore`. The contents of `lib` are covered by their respective licenses.
+The contents of `lib` are covered by their respective licenses. Files at the root of this repository (such as the `sln` and `props` files) and any other folders not mentioned in this document shall be considered to be covered by the same license as `HydraCore`.
