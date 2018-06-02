@@ -28,6 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define USE_PRIMARY_FOR_SIZE_PROPERTY "usePrimaryMonitorForSize"
 #define WIDTH_PROPERTY "width"
 #define HEIGHT_PROPERTY "height"
+#define OVERVIEW_MODE_PROPERTY "previewAllMonitors"
 
 #define MONITOR_CAPTURE_ID_PROPERTY "monitor"
 #define MONITOR_CAPTURE_CURSOR_PROPERTY "capture_cursor"
@@ -111,6 +112,9 @@ private:
     uint32_t width;
     uint32_t height;
 
+    bool overviewMode;
+    uint32_t activeMonitorCount;
+
     HydraCore::ActiveMonitorTracker* tracker;
     HydraCore::EventSubscriptionHandle trackerEventSubscription;
     HMONITOR activeMonitor;
@@ -184,6 +188,9 @@ private:
             obs_properties_add_bool(ret, monitor.GetName().c_str(), monitor.GetDescription().c_str());
         }
 
+        // Overview mode
+        obs_properties_add_bool(ret, OVERVIEW_MODE_PROPERTY, "Overview Mode");
+
         return ret;
     }
 
@@ -202,6 +209,8 @@ private:
         {
             obs_data_set_default_bool(settings, monitor.GetName().c_str(), true);
         }
+
+        obs_data_set_default_bool(settings, OVERVIEW_MODE_PROPERTY, false);
     }
 
     void Update(obs_data_t* settings)
@@ -232,15 +241,29 @@ private:
         }
 
         // Update which monitors are enabled
+        activeMonitorCount = 0;
         for (MonitorSource* monitorSource : monitorSources)
         {
             bool isEnabled = obs_data_get_bool(settings, monitorSource->GetMonitorName().c_str());
             monitorSource->SetIsEnabled(isEnabled);
+
+            if (isEnabled)
+            {
+                activeMonitorCount++;
+            }
         }
+
+        // Update overview mode
+        overviewMode = obs_data_get_bool(settings, OVERVIEW_MODE_PROPERTY);
     }
 
     uint32_t GetWidth()
     {
+        if (overviewMode)
+        {
+            return width * activeMonitorCount;
+        }
+
         return width;
     }
 
@@ -249,12 +272,9 @@ private:
         return height;
     }
 
-    void VideoRender(gs_effect_t* effect)
+    void RenderOverviewMode()
     {
-#if 0
         int i = 0;
-        float monitorCount = (float)std::count_if(monitorSources.begin(), monitorSources.end(), [](MonitorSource* monitor) { return monitor->IsEnabled(); });
-        float monitorSize = ((float)GetWidth()) / monitorCount;
         for (MonitorSource* monitorSource : monitorSources)
         {
             if (!monitorSource->IsEnabled())
@@ -263,15 +283,23 @@ private:
             }
 
             gs_matrix_push();
-            gs_matrix_translate3f(monitorSize * (float)i, 0.f, 0.f);
-            gs_matrix_scale3f(1.f / monitorCount, 1.f, 1.f);
+            gs_matrix_translate3f((float)width * (float)i, 0.f, 0.f);
+
+            obs_source_t* source = monitorSource->GetSource();
+            float sourceWidth = (float)obs_source_get_width(source);
+            float sourceHeight = (float)obs_source_get_height(source);
+
+            gs_matrix_scale3f((float)width / sourceWidth, (float)height / sourceHeight, 1.f);
 
             obs_source_video_render(monitorSource->GetSource());
 
             gs_matrix_pop();
             i++;
         }
-#else
+    }
+
+    void RenderNormalMode()
+    {
         for (MonitorSource* monitorSource : monitorSources)
         {
             if (monitorSource->GetMonitorHandle() == activeMonitor)
@@ -280,7 +308,18 @@ private:
                 break;
             }
         }
-#endif
+    }
+
+    void VideoRender(gs_effect_t* effect)
+    {
+        if (overviewMode)
+        {
+            RenderOverviewMode();
+        }
+        else
+        {
+            RenderNormalMode();
+        }
     }
 
     void EnumSources(obs_source_enum_proc_t enumCallback, void* param, bool activeOnly)
