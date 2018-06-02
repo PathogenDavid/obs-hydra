@@ -2,6 +2,7 @@
 #include "EventHandler.h"
 
 #include <map>
+#include <mutex>
 
 namespace HydraCore
 {
@@ -11,6 +12,7 @@ namespace HydraCore
     {
     private:
         std::map<EventSubscriptionHandle, EventHandlerBase*> eventHandlers;
+        std::mutex eventHandlersMutex;
         EventSubscriptionHandle nextHandle;
     public:
         Event()
@@ -20,6 +22,8 @@ namespace HydraCore
 
         ~Event()
         {
+            std::lock_guard<std::mutex> lock(eventHandlersMutex);
+
             for (const std::pair<EventSubscriptionHandle, EventHandlerBase*>& eventHandler : eventHandlers)
             {
                 delete eventHandler.second;
@@ -29,6 +33,8 @@ namespace HydraCore
         template<class TTarget>
         EventSubscriptionHandle Subscribe(TTarget* targetObject, typename EventHandler<TTarget>::TargetMethodType targetMethod)
         {
+            std::lock_guard<std::mutex> lock(eventHandlersMutex);
+
             EventSubscriptionHandle handle = nextHandle;
             nextHandle++;
             eventHandlers[handle] = new EventHandler<TTarget>(targetObject, targetMethod);
@@ -37,11 +43,15 @@ namespace HydraCore
 
         void Unsubscribe(EventSubscriptionHandle subscriptionHandle)
         {
+            std::lock_guard<std::mutex> lock(eventHandlersMutex);
+
             eventHandlers.erase(subscriptionHandle);
         }
 
         void Dispatch()
         {
+            std::lock_guard<std::mutex> lock(eventHandlersMutex);
+
             for (const std::pair<EventSubscriptionHandle, EventHandlerBase*>& eventHandler : eventHandlers)
             {
                 eventHandler.second->Dispatch();
