@@ -328,9 +328,29 @@ private:
         return height;
     }
 
+    void RenderSourceNormalized(obs_source_t* source)
+    {
+        gs_matrix_push();
+
+        float sourceWidth = (float)obs_source_get_width(source);
+        float sourceHeight = (float)obs_source_get_height(source);
+
+        gs_matrix_scale3f((float)width / sourceWidth, (float)height / sourceHeight, 1.f);
+
+        obs_source_video_render(source);
+
+        gs_matrix_pop();
+    }
+
+    void RenderSourceNormalized(MonitorSource* source)
+    {
+        RenderSourceNormalized(source->GetSource());
+    }
+
     void RenderOverviewMode()
     {
-        int i = 0;
+        gs_matrix_push();
+
         for (MonitorSource* monitorSource : monitorSources)
         {
             if (!monitorSource->IsEnabled())
@@ -338,27 +358,19 @@ private:
                 continue;
             }
 
-            gs_matrix_push();
-            gs_matrix_translate3f((float)width * (float)i, 0.f, 0.f);
+            RenderSourceNormalized(monitorSource);
 
-            obs_source_t* source = monitorSource->GetSource();
-            float sourceWidth = (float)obs_source_get_width(source);
-            float sourceHeight = (float)obs_source_get_height(source);
-
-            gs_matrix_scale3f((float)width / sourceWidth, (float)height / sourceHeight, 1.f);
-
-            obs_source_video_render(monitorSource->GetSource());
-
-            gs_matrix_pop();
-            i++;
+            gs_matrix_translate3f((float)width, 0.f, 0.f);
         }
+
+        gs_matrix_pop();
     }
 
     void RenderNormalMode()
     {
         if (!animation.IsAnimating())
         {
-            obs_source_video_render(activeMonitor->GetSource());
+            RenderSourceNormalized(activeMonitor);
             return;
         }
         
@@ -373,16 +385,7 @@ private:
                 continue;
             }
 
-            obs_source_t* source = monitorSource->GetSource();
-            float sourceWidth = (float)obs_source_get_width(source);
-            float sourceHeight = (float)obs_source_get_height(source);
-
-            gs_matrix_push();
-            gs_matrix_scale3f((float)width / sourceWidth, (float)height / sourceHeight, 1.f);
-
-            obs_source_video_render(monitorSource->GetSource());
-
-            gs_matrix_pop();
+            RenderSourceNormalized(monitorSource);
 
             gs_matrix_translate3f((float)width, 0.f, 0.f);
         }
