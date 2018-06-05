@@ -10,10 +10,14 @@
     <ClInclude Include="ActiveMonitorTracker.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="EventHandler.h" />
+    <ClInclude Include="LinearAnimation.h" />
+    <ClInclude Include="Animation.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Monitor.cpp" />
     <ClCompile Include="Win32Exception.cpp" />
     <ClCompile Include="ActiveMonitorTracker.cpp" />
+    <ClCompile Include="LinearAnimation.cpp" />
+    <ClCompile Include="Animation.cpp" />
   </ItemGroup>
 </Project>

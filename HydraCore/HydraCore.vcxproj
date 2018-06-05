@@ -15,15 +15,19 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ActiveMonitorTracker.h" />
+    <ClInclude Include="Animation.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="EventHandler.h" />
     <ClInclude Include="Monitor.h" />
     <ClInclude Include="Rectangle.h" />
+    <ClInclude Include="LinearAnimation.h" />
     <ClInclude Include="Win32Exception.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActiveMonitorTracker.cpp" />
+    <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Monitor.cpp" />
+    <ClCompile Include="LinearAnimation.cpp" />
     <ClCompile Include="Win32Exception.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <ActiveMonitorTracker.h>
 #include <Monitor.h>
 #include <obs.h>
+#include <LinearAnimation.h>
 #include <vector>
 
 #define SHOW_CURSOR_PROPERTY "showCursor"
@@ -29,6 +30,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define WIDTH_PROPERTY "width"
 #define HEIGHT_PROPERTY "height"
 #define OVERVIEW_MODE_PROPERTY "previewAllMonitors"
+
+#define ANIMATION_ENABLED_PROPERTY "animationEnabled"
+#define ANIMATION_SPEED_PROPERTY "animationSpeed"
 
 #define MONITOR_CAPTURE_ID_PROPERTY "monitor"
 #define MONITOR_CAPTURE_CURSOR_PROPERTY "capture_cursor"
@@ -41,12 +45,14 @@ private:
     HydraCore::Monitor monitor;
     bool showCursor;
     bool isEnabled;
+    int physicalIndex;
 public:
     MonitorSource(HydraCore::Monitor& monitor, bool showCursor)
         : monitor(monitor), showCursor(showCursor)
     {
         this->showCursor = showCursor;
         isEnabled = true;
+        this->physicalIndex = 0;
 
         // Create a data collection to hold the source's settings
         // We can't share this between sources because OBS will use it internally for the source, meaning each source will have the same settings data.
@@ -94,6 +100,16 @@ public:
         isEnabled = enabled;
     }
 
+    int GetPhysicalIndex()
+    {
+        return physicalIndex;
+    }
+
+    void SetPhysicalIndex(int physicalIndex)
+    {
+        this->physicalIndex = physicalIndex;
+    }
+
     ~MonitorSource()
     {
         obs_source_release(source);
@@ -117,11 +133,30 @@ private:
 
     HydraCore::ActiveMonitorTracker* tracker;
     HydraCore::EventSubscriptionHandle trackerEventSubscription;
-    HMONITOR activeMonitor;
+    HMONITOR activeMonitorHandle;
+    MonitorSource* activeMonitor;
+
+    HydraCore::LinearAnimation animation;
+    bool animationEnabled;
 
     void ActiveMonitorChanged()
     {
-        activeMonitor = tracker->GetActiveMonitorHandle();
+        activeMonitorHandle = tracker->GetActiveMonitorHandle();
+
+        // It is intentional that activeMonitor is not changed in the event the handle is not found in the sources collection
+        // This makes it so the last known visible monitor is the one that is visible.
+        for (MonitorSource* monitorSource : monitorSources)
+        {
+            if (monitorSource->GetMonitorHandle() == activeMonitorHandle && monitorSource->IsEnabled())
+            {
+                activeMonitor = monitorSource;
+            }
+        }
+
+        if (animationEnabled)
+        {
+            animation.SetTargetPosition((float)(activeMonitor->GetPhysicalIndex() * width));
+        }
     }
 
 public:
@@ -145,8 +180,13 @@ public:
             monitorSources.push_back(new MonitorSource(monitor, showCursor));
         }
 
+        activeMonitor = monitorSources[0];
+
         // Perform initial update
         Update(settings);
+
+        // Jump animation to active monitor
+        animation.JumpToPosition((float)(activeMonitor->GetPhysicalIndex() * width));
     }
 
     ~ActiveMonitorSource()
@@ -191,6 +231,10 @@ private:
         // Overview mode
         obs_properties_add_bool(ret, OVERVIEW_MODE_PROPERTY, "Overview Mode");
 
+        // Animation
+        obs_properties_add_bool(ret, ANIMATION_ENABLED_PROPERTY, "Enable Animation");
+        obs_properties_add_float_slider(ret, ANIMATION_SPEED_PROPERTY, "Animation Speed", 0.0, 100'000.0, 1.0);
+
         return ret;
     }
 
@@ -211,6 +255,9 @@ private:
         }
 
         obs_data_set_default_bool(settings, OVERVIEW_MODE_PROPERTY, false);
+
+        obs_data_set_default_bool(settings, ANIMATION_ENABLED_PROPERTY, true);
+        obs_data_set_default_double(settings, ANIMATION_SPEED_PROPERTY, 1920.0 * 4.0);
     }
 
     void Update(obs_data_t* settings)
@@ -249,12 +296,21 @@ private:
 
             if (isEnabled)
             {
+                monitorSource->SetPhysicalIndex(activeMonitorCount);
                 activeMonitorCount++;
             }
         }
 
+        // Pretend that the active monitor changed in case the active monitor just became enabled
+        // (Note that we don't bother changing off of the current monitor if it became disabled.)
+        ActiveMonitorChanged();
+
         // Update overview mode
         overviewMode = obs_data_get_bool(settings, OVERVIEW_MODE_PROPERTY);
+
+        // Update animation
+        animationEnabled = obs_data_get_bool(settings, ANIMATION_ENABLED_PROPERTY);
+        animation.SetVelocity((float)obs_data_get_double(settings, ANIMATION_SPEED_PROPERTY));
     }
 
     uint32_t GetWidth()
@@ -300,14 +356,38 @@ private:
 
     void RenderNormalMode()
     {
+        if (!animation.IsAnimating())
+        {
+            obs_source_video_render(activeMonitor->GetSource());
+            return;
+        }
+        
+        gs_matrix_push();
+
+        gs_matrix_translate3f(-animation.GetCurrentPosition(), 0.f, 0.f);
+
         for (MonitorSource* monitorSource : monitorSources)
         {
-            if (monitorSource->GetMonitorHandle() == activeMonitor)
+            if (!monitorSource->IsEnabled())
             {
-                obs_source_video_render(monitorSource->GetSource());
-                break;
+                continue;
             }
+
+            obs_source_t* source = monitorSource->GetSource();
+            float sourceWidth = (float)obs_source_get_width(source);
+            float sourceHeight = (float)obs_source_get_height(source);
+
+            gs_matrix_push();
+            gs_matrix_scale3f((float)width / sourceWidth, (float)height / sourceHeight, 1.f);
+
+            obs_source_video_render(monitorSource->GetSource());
+
+            gs_matrix_pop();
+
+            gs_matrix_translate3f((float)width, 0.f, 0.f);
         }
+
+        gs_matrix_pop();
     }
 
     void VideoRender(gs_effect_t* effect)
@@ -322,10 +402,25 @@ private:
         }
     }
 
+    void VideoTick(float deltaTime)
+    {
+        animation.Update(deltaTime);
+    }
+
     void EnumSources(obs_source_enum_proc_t enumCallback, void* param, bool activeOnly)
     {
+        // If we're only enumerating active monitors, aren't in overview mode, and aren't animating; then just report the active monitor.
+#if false // For some reason this isn't working as expected. I think it's OBS's fault.
+        if (activeOnly && !overviewMode && !animation.IsAnimating())
+        {
+            enumCallback(source, activeMonitor->GetSource(), param);
+            return;
+        }
+#endif
+
         for (MonitorSource* monitorSource : monitorSources)
         {
+            // Skip disabled monitors
             if (activeOnly && !monitorSource->IsEnabled())
             {
                 continue;
@@ -366,6 +461,7 @@ public:
             ->WithGetWidth(&GetWidth)
             ->WithGetHeight(&GetHeight)
             ->WithVideoRender(&VideoRender)
+            ->WithVideoTick(&VideoTick)
             // Source enumeration
             ->WithEnumActiveSources(&EnumActiveSources)
             ->WithEnumAllSources(&EnumAllSources)
