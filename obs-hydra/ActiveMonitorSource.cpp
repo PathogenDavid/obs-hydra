@@ -29,10 +29,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define USE_PRIMARY_FOR_SIZE_PROPERTY "usePrimaryMonitorForSize"
 #define WIDTH_PROPERTY "width"
 #define HEIGHT_PROPERTY "height"
-#define OVERVIEW_MODE_PROPERTY "previewAllMonitors"
 
 #define ANIMATION_ENABLED_PROPERTY "animationEnabled"
 #define ANIMATION_SPEED_PROPERTY "animationSpeed"
+
+#define OVERVIEW_MODE_PROPERTY "overviewMode"
+#define OVERVIEW_OUTLINE_ENABLED_PROPERTY "overviewOutlineEnabled"
+#define OVERVIEW_OUTLINE_THICKNESS_PROPERTY "overviewOutlineThickness"
+#define OVERVIEW_OUTLINE_COLOR_PROPERTY "overviewOutlineColor"
 
 #define MONITOR_CAPTURE_ID_PROPERTY "monitor"
 #define MONITOR_CAPTURE_CURSOR_PROPERTY "capture_cursor"
@@ -129,6 +133,10 @@ private:
     uint32_t height;
 
     bool overviewMode;
+    bool overviewOutlineEnabled;
+    int overviewOutlineThickness;
+    vec4 overviewOutlineColor;
+
     uint32_t activeMonitorCount;
 
     HydraCore::ActiveMonitorTracker* tracker;
@@ -138,6 +146,10 @@ private:
 
     HydraCore::LinearAnimation animation;
     bool animationEnabled;
+
+    gs_effect_t* solidEffect;
+    gs_eparam_t* solidEffectColor;
+    gs_technique_t* solidEffectTechnique;
 
     void ActiveMonitorChanged()
     {
@@ -181,6 +193,11 @@ public:
         }
 
         activeMonitor = monitorSources[0];
+
+        // Get solid effect for overview mode
+        solidEffect = obs_get_base_effect(OBS_EFFECT_SOLID);
+        solidEffectColor = gs_effect_get_param_by_name(solidEffect, "color");
+        solidEffectTechnique = gs_effect_get_technique(solidEffect, "Solid");
 
         // Perform initial update
         Update(settings);
@@ -230,6 +247,9 @@ private:
 
         // Overview mode
         obs_properties_add_bool(ret, OVERVIEW_MODE_PROPERTY, "Overview Mode");
+        obs_properties_add_bool(ret, OVERVIEW_OUTLINE_ENABLED_PROPERTY, "Overview Outline");
+        obs_properties_add_int_slider(ret, OVERVIEW_OUTLINE_THICKNESS_PROPERTY, "Overview Outline Thickness", 0, 1'000, 1);
+        obs_properties_add_color(ret, OVERVIEW_OUTLINE_COLOR_PROPERTY, "Overview Outline Color");
 
         // Animation
         obs_properties_add_bool(ret, ANIMATION_ENABLED_PROPERTY, "Enable Animation");
@@ -255,6 +275,9 @@ private:
         }
 
         obs_data_set_default_bool(settings, OVERVIEW_MODE_PROPERTY, false);
+        obs_data_set_default_bool(settings, OVERVIEW_OUTLINE_ENABLED_PROPERTY, true);
+        obs_data_set_default_int(settings, OVERVIEW_OUTLINE_THICKNESS_PROPERTY, 10);
+        obs_data_set_default_int(settings, OVERVIEW_OUTLINE_COLOR_PROPERTY, 0xffff386d);
 
         obs_data_set_default_bool(settings, ANIMATION_ENABLED_PROPERTY, true);
         obs_data_set_default_double(settings, ANIMATION_SPEED_PROPERTY, 1920.0 * 4.0);
@@ -307,6 +330,9 @@ private:
 
         // Update overview mode
         overviewMode = obs_data_get_bool(settings, OVERVIEW_MODE_PROPERTY);
+        overviewOutlineEnabled = obs_data_get_bool(settings, OVERVIEW_OUTLINE_ENABLED_PROPERTY);
+        overviewOutlineThickness = (int)obs_data_get_int(settings, OVERVIEW_OUTLINE_THICKNESS_PROPERTY);
+        vec4_from_rgba(&overviewOutlineColor, (uint32_t)obs_data_get_int(settings, OVERVIEW_OUTLINE_COLOR_PROPERTY));
 
         // Update animation
         animationEnabled = obs_data_get_bool(settings, ANIMATION_ENABLED_PROPERTY);
@@ -364,6 +390,39 @@ private:
         }
 
         gs_matrix_pop();
+
+        if (overviewOutlineEnabled)
+        {
+            gs_matrix_push();
+
+            gs_matrix_translate3f(animation.GetCurrentPosition(), 0.f, 0.f);
+
+            gs_effect_set_vec4(solidEffectColor, &overviewOutlineColor);
+
+            gs_technique_begin(solidEffectTechnique);
+            gs_technique_begin_pass(solidEffectTechnique, 0);
+
+            // Top
+            gs_draw_sprite(nullptr, 0, width, overviewOutlineThickness);
+
+            // Left
+            gs_draw_sprite(nullptr, 0, overviewOutlineThickness, height);
+            
+            // Right
+            gs_matrix_push();
+            gs_matrix_translate3f((float)(width - overviewOutlineThickness), 0.f, 0.f);
+            gs_draw_sprite(nullptr, 0, overviewOutlineThickness, height);
+            gs_matrix_pop();
+
+            // Bottom
+            gs_matrix_translate3f(0.f, (float)(height - overviewOutlineThickness), 0.f);
+            gs_draw_sprite(nullptr, 0, width, overviewOutlineThickness);
+
+            gs_technique_end_pass(solidEffectTechnique);
+            gs_technique_end(solidEffectTechnique);
+
+            gs_matrix_pop();
+        }
     }
 
     void RenderNormalMode()
