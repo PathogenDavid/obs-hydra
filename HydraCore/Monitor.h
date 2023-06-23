@@ -12,6 +12,7 @@ namespace HydraCore
     private:
         HMONITOR handle;
         uint32_t id;
+        std::string interfaceId;
         std::string name;
         std::string description;
         Rectangle rectangle;
@@ -19,14 +20,50 @@ namespace HydraCore
     public:
         Monitor(uint32_t id, HMONITOR handle, LPRECT rectangle);
 
-        HMONITOR GetHandle();
-        uint32_t GetId();
-        std::string GetName();
-        std::string GetDescription();
-        Rectangle GetRectangle();
-        uint32_t GetWidth();
-        uint32_t GetHeight();
-        bool IsPrimary();
+        inline HMONITOR GetHandle()
+        {
+            return handle;
+        }
+
+        inline uint32_t GetId()
+        {
+            return id;
+        }
+        
+        inline std::string GetInterfaceId()
+        {
+            return interfaceId;
+        }
+
+        inline std::string GetName()
+        {
+            return name;
+        }
+
+        inline std::string GetDescription()
+        {
+            return description;
+        }
+
+        inline Rectangle GetRectangle()
+        {
+            return rectangle;
+        }
+
+        inline uint32_t GetWidth()
+        {
+            return rectangle.Width;
+        }
+
+        inline uint32_t GetHeight()
+        {
+            return rectangle.Height;
+        }
+
+        inline bool IsPrimary()
+        {
+            return isPrimary;
+        }
 
         static std::vector<Monitor> GetAllMonitors(bool sortLeftToRight = false);
         static Monitor GetPrimaryMonitor();

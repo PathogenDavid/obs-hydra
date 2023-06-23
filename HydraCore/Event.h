@@ -6,7 +6,7 @@
 
 namespace HydraCore
 {
-    typedef char* EventSubscriptionHandle;
+    typedef uintptr_t EventSubscriptionHandle;
 
     class Event
     {
@@ -15,20 +15,12 @@ namespace HydraCore
         std::mutex eventHandlersMutex;
         EventSubscriptionHandle nextHandle;
     public:
-        Event()
+        inline Event()
         {
-            nextHandle = (EventSubscriptionHandle)1;
+            nextHandle = 1;
         }
 
-        ~Event()
-        {
-            std::lock_guard<std::mutex> lock(eventHandlersMutex);
-
-            for (const std::pair<EventSubscriptionHandle, EventHandlerBase*>& eventHandler : eventHandlers)
-            {
-                delete eventHandler.second;
-            }
-        }
+        ~Event();
 
         template<class TTarget>
         EventSubscriptionHandle Subscribe(TTarget* targetObject, typename EventHandler<TTarget>::TargetMethodType targetMethod)
@@ -41,21 +33,7 @@ namespace HydraCore
             return handle;
         }
 
-        void Unsubscribe(EventSubscriptionHandle subscriptionHandle)
-        {
-            std::lock_guard<std::mutex> lock(eventHandlersMutex);
-
-            eventHandlers.erase(subscriptionHandle);
-        }
-
-        void Dispatch()
-        {
-            std::lock_guard<std::mutex> lock(eventHandlersMutex);
-
-            for (const std::pair<EventSubscriptionHandle, EventHandlerBase*>& eventHandler : eventHandlers)
-            {
-                eventHandler.second->Dispatch();
-            }
-        }
+        void Unsubscribe(EventSubscriptionHandle subscriptionHandle);
+        void Dispatch();
     };
 }

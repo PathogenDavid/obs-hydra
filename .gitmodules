@@ -1,3 +1,4 @@
-[submodule "lib/obs-studio"]
-	path = lib/obs-studio
+[submodule "external/obs-studio"]
+	path = external/obs-studio
 	url = https://github.com/obsproject/obs-studio.git
+	branch = release/29.1

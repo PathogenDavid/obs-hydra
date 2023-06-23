@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------------
-Copyright (C) 2018  Pathogen Studios <opensource@pathogenstudios.com>
+Copyright (C) 2018  David Maas
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -38,8 +38,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define OVERVIEW_OUTLINE_THICKNESS_PROPERTY "overviewOutlineThickness"
 #define OVERVIEW_OUTLINE_COLOR_PROPERTY "overviewOutlineColor"
 
-#define MONITOR_CAPTURE_ID_PROPERTY "monitor"
+// These correspond to the properties used by plugins\win-capture\duplicator-monitor-capture.c
+#define MONITOR_CAPTURE_SOURCE_ID "monitor_capture"
+#define MONITOR_CAPTURE_MONITOR_ID_LEGACY_PROPERTY "monitor"
+#define MONITOR_CAPTURE_MONITOR_ID_PROPERTY "monitor_id"
+#define MONITOR_CAPTURE_METHOD_PROPERTY "method"
 #define MONITOR_CAPTURE_CURSOR_PROPERTY "capture_cursor"
+#define MONITOR_CAPTURE_FORCE_SDR_PROPERTY "force_sdr"
+
+enum monitor_capture_method
+{
+    MONITOR_CAPTURE_METHOD_AUTO,
+    MONITOR_CAPTURE_METHOD_DXGI,
+    MONITOR_CAPTURE_METHOD_WGC,
+};
 
 class MonitorSource
 {
@@ -62,10 +74,22 @@ public:
         // We can't share this between sources because OBS will use it internally for the source, meaning each source will have the same settings data.
         // (See obs.c:1808 - obs_data_newref is used, only adding a reference - not cloning the settings.)
         settings = obs_data_create();
-        obs_data_set_int(settings, MONITOR_CAPTURE_ID_PROPERTY, monitor.GetId());
-        obs_data_set_bool(settings, MONITOR_CAPTURE_CURSOR_PROPERTY, showCursor);
+        
+        // https://github.com/obsproject/obs-studio/pull/7049 changed the monitor ID from using the monitor index to the monitor's DeviceID
+        if ((obs_get_version() >> 24) < 29)
+        {
+            obs_data_set_int(settings, MONITOR_CAPTURE_MONITOR_ID_LEGACY_PROPERTY, monitor.GetId());
+        }
+        else
+        {
+            obs_data_set_string(settings, MONITOR_CAPTURE_MONITOR_ID_PROPERTY, monitor.GetInterfaceId().c_str());
+        }
 
-        source = obs_source_create_private("monitor_capture", monitor.GetDescription().c_str(), settings);
+        obs_data_set_int(settings, MONITOR_CAPTURE_METHOD_PROPERTY, MONITOR_CAPTURE_METHOD_DXGI);
+        obs_data_set_bool(settings, MONITOR_CAPTURE_CURSOR_PROPERTY, showCursor);
+        obs_data_set_bool(settings, MONITOR_CAPTURE_FORCE_SDR_PROPERTY, true); //TODO: Investigate adding HDR support
+
+        source = obs_source_create_private(MONITOR_CAPTURE_SOURCE_ID, monitor.GetDescription().c_str(), settings);
     }
 
     void SetShowCursor(bool showCursor)
@@ -505,7 +529,7 @@ private:
 public:
     static void Register()
     {
-        (new ObsSourceDefinition<ActiveMonitorSource>("obs-hydra-active-monitor-source", "Active Monitor Source"))
+        (new ObsSourceDefinition<ActiveMonitorSource>("obs-hydra-active-monitor-source", "Hydra - Active Monitor Source"))
             // General configuration
             ->WithType(OBS_SOURCE_TYPE_INPUT)
             ->WithOutputFlag(OBS_SOURCE_VIDEO)

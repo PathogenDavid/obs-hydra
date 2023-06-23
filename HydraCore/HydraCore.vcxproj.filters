@@ -19,5 +19,6 @@
     <ClCompile Include="ActiveMonitorTracker.cpp" />
     <ClCompile Include="LinearAnimation.cpp" />
     <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="Event.cpp" />
   </ItemGroup>
 </Project>

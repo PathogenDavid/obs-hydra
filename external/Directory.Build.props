@@ -1,0 +1,3 @@
+<Project>
+  <!-- Prevent project's Directory.Build.props from affecting dependencies. -->
+</Project>

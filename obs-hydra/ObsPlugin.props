@@ -4,8 +4,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_PropertySheetDisplayName>ObsPluginCommonProperties</_PropertySheetDisplayName>
-    <IncludePath>$(SolutionDir)lib\obs-studio\libobs\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)lib\;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(MSBuildThisFileDirectory)../external/obs-studio/libobs/;$(IncludePath)</IncludePath>
+    <LibraryPath>$(MSBuildThisFileDirectory)../external/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>

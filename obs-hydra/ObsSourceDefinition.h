@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------------
-Copyright (C) 2018  Pathogen Studios <opensource@pathogenstudios.com>
+Copyright (C) 2018  David Maas
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -101,6 +101,8 @@ public:
         //  However, from what I can find: All this really does (as of OBS 21.1.2) is enable audio.
         //  I imagine this functionality could be extended in the future (like actually allowing child sources) but for now I'm leaving it off.
         sourceInfo.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW | OBS_SOURCE_DO_NOT_DUPLICATE;
+
+        sourceInfo.icon_type = OBS_ICON_TYPE_DESKTOP_CAPTURE;
     }
 
     ObsSourceDefinition<TSource>* WithType(obs_source_type type)
@@ -310,33 +312,33 @@ private:
     // Registered Method Fields
     //-------------------------------------------------------------------------
 private:
-    typename ObsSourceMethods<TSource>::GetWidth GetWidth;
-    typename ObsSourceMethods<TSource>::GetHeight GetHeight;
-    typename ObsSourceMethods<TSource>::Update Update;
-    typename ObsSourceMethods<TSource>::GetProperties GetProperties;
-    typename ObsSourceMethods<TSource>::Save Save;
-    typename ObsSourceMethods<TSource>::Load Load;
-    typename ObsSourceMethods<TSource>::Activate Activate;
-    typename ObsSourceMethods<TSource>::Deactivate Deactivate;
-    typename ObsSourceMethods<TSource>::Show Show;
-    typename ObsSourceMethods<TSource>::Hide Hide;
-    typename ObsSourceMethods<TSource>::VideoTick VideoTick;
-    typename ObsSourceMethods<TSource>::VideoRender VideoRender;
-    typename ObsSourceMethods<TSource>::Focus Focus;
-    typename ObsSourceMethods<TSource>::MouseClick MouseClick;
-    typename ObsSourceMethods<TSource>::MouseMove MouseMove;
-    typename ObsSourceMethods<TSource>::MouseWheel MouseWheel;
-    typename ObsSourceMethods<TSource>::KeyClick KeyClick;
-    typename ObsSourceMethods<TSource>::EnumActiveSources EnumActiveSources;
-    typename ObsSourceMethods<TSource>::EnumAllSources EnumAllSources;
-    typename ObsSourceMethods<TSource>::AudioRender AudioRender;
-    typename ObsSourceMethods<TSource>::FilterVideo FilterVideo;
-    typename ObsSourceMethods<TSource>::FilterAudio FilterAudio;
-    typename ObsSourceMethods<TSource>::FilterRemove FilterRemove;
-    typename ObsSourceMethods<TSource>::TransitionStart TransitionStart;
-    typename ObsSourceMethods<TSource>::TransitionStop TransitionStop;
+    typename ObsSourceMethods<TSource>::GetWidth GetWidth = nullptr;
+    typename ObsSourceMethods<TSource>::GetHeight GetHeight = nullptr;
+    typename ObsSourceMethods<TSource>::Update Update = nullptr;
+    typename ObsSourceMethods<TSource>::GetProperties GetProperties = nullptr;
+    typename ObsSourceMethods<TSource>::Save Save = nullptr;
+    typename ObsSourceMethods<TSource>::Load Load = nullptr;
+    typename ObsSourceMethods<TSource>::Activate Activate = nullptr;
+    typename ObsSourceMethods<TSource>::Deactivate Deactivate = nullptr;
+    typename ObsSourceMethods<TSource>::Show Show = nullptr;
+    typename ObsSourceMethods<TSource>::Hide Hide = nullptr;
+    typename ObsSourceMethods<TSource>::VideoTick VideoTick = nullptr;
+    typename ObsSourceMethods<TSource>::VideoRender VideoRender = nullptr;
+    typename ObsSourceMethods<TSource>::Focus Focus = nullptr;
+    typename ObsSourceMethods<TSource>::MouseClick MouseClick = nullptr;
+    typename ObsSourceMethods<TSource>::MouseMove MouseMove = nullptr;
+    typename ObsSourceMethods<TSource>::MouseWheel MouseWheel = nullptr;
+    typename ObsSourceMethods<TSource>::KeyClick KeyClick = nullptr;
+    typename ObsSourceMethods<TSource>::EnumActiveSources EnumActiveSources = nullptr;
+    typename ObsSourceMethods<TSource>::EnumAllSources EnumAllSources = nullptr;
+    typename ObsSourceMethods<TSource>::AudioRender AudioRender = nullptr;
+    typename ObsSourceMethods<TSource>::FilterVideo FilterVideo = nullptr;
+    typename ObsSourceMethods<TSource>::FilterAudio FilterAudio = nullptr;
+    typename ObsSourceMethods<TSource>::FilterRemove FilterRemove = nullptr;
+    typename ObsSourceMethods<TSource>::TransitionStart TransitionStart = nullptr;
+    typename ObsSourceMethods<TSource>::TransitionStop TransitionStop = nullptr;
 
-    typename ObsSourceMethods<TSource>::GetDefaults GetDefaults;
+    typename ObsSourceMethods<TSource>::GetDefaults GetDefaults = nullptr;
 
     //-------------------------------------------------------------------------
     // Method Registration

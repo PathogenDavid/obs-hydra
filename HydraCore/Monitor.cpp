@@ -19,9 +19,9 @@ namespace HydraCore
         this->rectangle.Height = rectangle->bottom - rectangle->top;
 
         // Get extended monitor info
-        MONITORINFOEX monitorInfo = {};
+        MONITORINFOEXA monitorInfo = {};
         monitorInfo.cbSize = sizeof(monitorInfo);
-        if (!GetMonitorInfo(handle, &monitorInfo))
+        if (!GetMonitorInfoA(handle, &monitorInfo))
         {
             throw Win32Exception();
         }
@@ -29,54 +29,31 @@ namespace HydraCore
         name = std::string(monitorInfo.szDevice);
         isPrimary = monitorInfo.dwFlags == MONITORINFOF_PRIMARY;
 
+        // Get the interface ID of the monitor
+        DISPLAY_DEVICEA deviceInfo = {};
+        deviceInfo.cb = sizeof(deviceInfo);
+        if (!EnumDisplayDevicesA(monitorInfo.szDevice, 0, &deviceInfo, EDD_GET_DEVICE_INTERFACE_NAME))
+        {
+            // EnumDisplayDevices doesn't set last error but is documented as only failing with bad parameters
+            SetLastError(ERROR_INVALID_PARAMETER);
+            throw Win32Exception();
+        }
+
+        interfaceId = std::string(deviceInfo.DeviceID);
+
         // Create the monitor description
         std::ostringstream descriptionBuilder;
+#if 0
+        descriptionBuilder << "[" << interfaceId << "]";
+        descriptionBuilder << "[" << name << "]";
+#else
         descriptionBuilder << "Display " << id << ": " << this->rectangle.Width << "x" << this->rectangle.Height << " @ " << this->rectangle.Left << "," << this->rectangle.Top;
         if (isPrimary)
         {
             descriptionBuilder << " (Primary)";
         }
+#endif
         description = descriptionBuilder.str();
-    }
-
-    HMONITOR Monitor::GetHandle()
-    {
-        return handle;
-    }
-
-    uint32_t Monitor::GetId()
-    {
-        return id;
-    }
-
-    std::string Monitor::GetName()
-    {
-        return name;
-    }
-
-    std::string Monitor::GetDescription()
-    {
-        return description;
-    }
-
-    Rectangle Monitor::GetRectangle()
-    {
-        return rectangle;
-    }
-
-    uint32_t Monitor::GetWidth()
-    {
-        return rectangle.Width;
-    }
-
-    uint32_t Monitor::GetHeight()
-    {
-        return rectangle.Height;
-    }
-
-    bool Monitor::IsPrimary()
-    {
-        return isPrimary;
     }
 
     static BOOL CALLBACK GetAllMonitorsEnumerator(HMONITOR handle, HDC deviceCOntext, LPRECT rectangle, LPARAM settings)
