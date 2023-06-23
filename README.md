@@ -1,6 +1,9 @@
 OBS Hydra: An OBS plugin for multi-monitor streaming
 =======================================================================================================================
 
+[![GPLv2 Licensed](https://img.shields.io/github/license/pathogendavid/obs-hydra?style=flat-square)](LICENSE.txt)
+[![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-lightgrey?logo=github&style=flat-square)](https://github.com/sponsors/PathogenDavid)
+
 OBS Hydra is a plugin for [OBS Studio](https://obsproject.com/). It adds a source which acts as a display capture that follows your focused monitor (which is inferred from which window has focus.)
 
 Currently only Windows is supported. (Keeping track of the active monitor and the OBS bits for capturing screens is very platform-specific.)
